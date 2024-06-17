@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CO2 Emission Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <img src="/static/images/uniport_logo.png" width="100" alt="Uniport Logo">
+                <h2>CO2 Emission Dashboard</h2>
+                <form id="data-form">
+                    <div class="form-group">
+                        <label for="granularity">Time Granularity</label>
+                        <select class="form-control" id="granularity" name="granularity">
+                            <option value="Daily">Daily</option>
+                            <option value="Weekly">Weekly</option>
+                            <option value="Monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Select Location</label>
+                        <select class="form-control" id="location" name="location">
+                            {% for location in locations %}
+                                <option value="{{ location }}">{{ location }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+                <div id="latest-reading" class="mt-4"></div>
+                <div id="location-image" class="mt-4"></div>
+            </div>
+            <div class="col-md-9">
+                <div id="graphs"></div>
+                <div id="stats"></div>
+                <div id="forecast"></div>
+                <form id="download-form" class="mt-4">
+                    <input type="hidden" id="download-location" name="location">
+                    <button type="submit" class="btn btn-secondary">Download Forecast Data</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $('#data-form').on('submit', function (e) {
+                e.preventDefault();
+                $.ajax({
+                    type: 'POST',
+                    url: '/data',
+                    data: $(this).serialize(),
+                    success: function (response) {
+                        $('#latest-reading').html(`
+                            <h4>Latest reading from ${response.latest_reading.date}:</h4>
+                            <h4>${response.latest_reading.co2} ppm CO2</h4>
+                        `);
+                        $('#graphs').html(response.graph_html);
+                        $('#stats').html(response.stats_html);
+                        $('#forecast').html(response.forecast_html);
+                        if (response.image_base64) {
+                            $('#location-image').html(`<img src="data:image/png;base64,${response.image_base64}" alt="${response.location}" class="img-fluid">`);
+                        } else {
+                            $('#location-image').html('<p>No image available for this location.</p>');
+                        }
+                        $('#download-location').val(response.location);
+                    }
+                });
+            });
+
+            $('#download-form').on('submit', function (e) {
+                e.preventDefault();
+                $.ajax({
+                    type: 'POST',
+                    url: '/download-forecast',
+                    data: $(this).serialize(),
+                    xhrFields: {
+                        responseType: 'blob'
+                    },
+                    success: function (data) {
+                        var a = document.createElement('a');
+                        var url = window.URL.createObjectURL(data);
+                        a.href = url;
+                        a.download = 'forecasted_data.csv';
+                        document.body.append(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                    },
+                    error: function (xhr) {
+                        alert('Failed to download forecast data');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
