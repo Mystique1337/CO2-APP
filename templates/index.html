@@ -6,40 +6,123 @@
     <title>CO2 Emission Dashboard</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.9.1/font/bootstrap-icons.min.css" integrity="sha512-5PV92qsds/16vyYIJo3T/As4m2d8b6oWYfoqV+vtizRB6KhF1F9kYzWzQmsO6T3z3QG2Xdhrx7FQ+5R1LiQdUA==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .row {
+            margin-bottom: 20px;
+        }
+        .col-md-3 {
+            padding: 20px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .col-md-9 {
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-control {
+            width: 100%;
+            height: 40px;
+            font-size: 16px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .btn {
+            width: 100%;
+            height: 40px;
+            font-size: 16px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #337ab7;
+            color: #fff;
+        }
+        .btn-secondary {
+            background-color: #666;
+            color: #fff;
+        }
+        #graphs, #histograms, #stats, #forecast, #ai-insights {
+            margin-bottom: 20px;
+        }
+        #location-image {
+            margin-bottom: 20px;
+        }
+        .preloader {
+            display: block;
+            margin: auto;
+            width: 25px;
+            height: 25px;
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .ixDHLA {
+            background: rgb(255, 255, 255);
+            border: 1px solid rgb(236, 239, 241);
+            box-sizing: border-box;
+            box-shadow: rgb(17 51 83 / 2%) 0px 4px 12px;
+            border-radius: 6px;
+            padding: 24px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <div class="row mt-4">
+        <div class="row">
             <div class="col-md-3">
                 <img src="/static/images/uniport_logo.png" width="100" alt="Uniport Logo">
                 <h2>CO2 Emission Dashboard</h2>
-                <form id="data-form">
-                    <div class="form-group">
-                        <label for="granularity">Time Granularity</label>
-                        <select class="form-control" id="granularity" name="granularity">
-                            <option value="Daily">Daily</option>
-                            <option value="Weekly">Weekly</option>
-                            <option value="Monthly">Monthly</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="location">Select Location</label>
-                        <select class="form-control" id="location" name="location">
-                            {% for location in locations %}
-                                <option value="{{ location }}">{{ location }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Submit</button>
-                </form>
-                <div id="latest-reading" class="mt-4"></div>
-                <div id="location-image" class="mt-4"></div>
+                <div class="form-group">
+                    <label for="granularity">Time Granularity</label>
+                    <select class="form-control" id="granularity" name="granularity">
+                        <option value="Daily">Daily</option>
+                        <option value="Weekly">Weekly</option>
+                        <option value="Monthly">Monthly</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="location">Select Location</label>
+                    <select class="form-control" id="location" name="location">
+                        {% for location in locations %}
+                            <option value="{{ location }}">{{ location }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <div class="col-md-9">
+                <div class="sc-fzokvW ixDHLA mb-4 " id="latest-reading"></div>
+                <div id="location-image" class="mt-4"></div>
                 <div id="graphs"></div>
+                <div id="histograms"></div>
                 <div id="stats"></div>
                 <div id="forecast"></div>
+                <div id="ai-insights" class="ixDHLA"></div>
                 <form id="download-form" class="mt-4">
                     <input type="hidden" id="download-location" name="location">
                     <button type="submit" class="btn btn-secondary">Download Forecast Data</button>
@@ -49,30 +132,100 @@
     </div>
 
     <script>
-        $(document).ready(function () {
-            $('#data-form').on('submit', function (e) {
-                e.preventDefault();
-                $.ajax({
-                    type: 'POST',
-                    url: '/data',
-                    data: $(this).serialize(),
-                    success: function (response) {
-                        $('#latest-reading').html(`
-                            <h4>Latest reading from ${response.latest_reading.date}:</h4>
-                            <h4>${response.latest_reading.co2} ppm CO2</h4>
-                        `);
-                        $('#graphs').html(response.graph_html);
-                        $('#stats').html(response.stats_html);
-                        $('#forecast').html(response.forecast_html);
-                        if (response.image_base64) {
-                            $('#location-image').html(`<img src="data:image/png;base64,${response.image_base64}" alt="${response.location}" class="img-fluid">`);
-                        } else {
-                            $('#location-image').html('<p>No image available for this location.</p>');
-                        }
-                        $('#download-location').val(response.location);
+        function fetchData() {
+            const granularity = $('#granularity').val();
+            const location = $('#location').val();
+            $('.submit-button').empty();
+            $('.submit-button').append('<div class="preloader"></div>');
+            $.ajax({
+                type: 'POST',
+                url: '/data',
+                data: { granularity, location },
+                success: function (response) {
+                    let co2 = response.latest_reading.co2;
+                    let color;
+
+                    if (co2 >= 400 && co2 <= 500) {
+                        color = "rgb(55, 167, 51)"; // green
+                    } else if (co2 > 500 && co2 <= 600) {
+                        color = "yellow"; // yellow
+                    } else if (co2 > 600) {
+                        color = "red"; // red
                     }
-                });
+
+                    $('#latest-reading').html(`
+                        <h3>Latest reading from: ${response.latest_reading.date}</h3>
+                        <div class="d-flex" style="color: ${color};">
+                            <h1 style="font-size: 40px;">${co2} ppm</h1>
+                            <div style="margin-left: 10px;">
+                                <i class="bi bi-caret-up-fill" style="font-size: 24px; display: grid;"></i>
+                                <b>CO2</b>
+                            </div>
+                        </div>
+                    `);
+                    $('#graphs').html(response.graph_html);
+                    $('#histograms').html(response.hist_html);
+                    $('#stats').html(response.stats_html);
+                    $('#forecast').html(response.forecast_html);
+                    $('#ai-insights').html(`
+                        <h4>AI Insights</h4>
+                        <p>${response.ai_insights.max_value}</p>
+                        <p>${response.ai_insights.min_value}</p>
+                        <p>${response.ai_insights.mean_value}</p>
+                        <p>${response.ai_insights.trend}</p>
+                    `);
+                    if (response.image_base64) {
+                        $('#location-image').html(`<img src="data:image/png;base64,${response.image_base64}" alt="${response.location}" class="img-fluid">`);
+                    } else {
+                        $('#location-image').html('<p>No image available for this location.</p>');
+                    }
+                    $('#download-location').val(response.location);
+                    $('.submit-button').empty();
+                    $('.submit-button').append('Submit');
+                },
+                error: function () {
+                    alert('Error fetching data. Please try again.');
+                    $('.submit-button').empty();
+                    $('.submit-button').append('Submit');
+                }
             });
+        }
+
+        function updateCO2() {
+            setInterval(function () {
+                let min = 400;
+                let max = 600;
+                let co2 = Math.floor(Math.random() * (max - min + 1)) + min;
+                let color;
+
+                if (co2 >= 400 && co2 <= 500) {
+                    color = "rgb(55, 167, 51)"; // green
+                } else if (co2 > 500 && co2 <= 600) {
+                    color = "yellow"; // yellow
+                } else if (co2 > 600) {
+                    color = "red"; // red
+                }
+
+                $('#latest-reading').html(`
+                    <h3>Latest reading</h3>
+                    <div class="d-flex" style="color: ${color};">
+                        <h1 style="font-size: 40px;">${co2} ppm</h1>
+                        <div style="margin-left: 10px;">
+                            <i class="bi bi-caret-up-fill" style="font-size: 24px; display: grid;"></i>
+                            <b>CO2</b>
+                        </div>
+                    </div>
+                `);
+            }, 1000);
+        }
+
+        $(document).ready(function () {
+            $('#location').change(function () {
+                fetchData();
+            });
+
+            fetchData();
+            updateCO2();
 
             $('#download-form').on('submit', function (e) {
                 e.preventDefault();
@@ -93,7 +246,7 @@
                         a.remove();
                         window.URL.revokeObjectURL(url);
                     },
-                    error: function (xhr) {
+                    error: function () {
                         alert('Failed to download forecast data');
                     }
                 });

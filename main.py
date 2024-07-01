@@ -73,6 +73,13 @@ def get_data():
                   labels={'value': 'CO2 Emission (ppm)'})
     graph_html = fig.to_html(full_html=False)
 
+    # Create Histogram
+    hist_fig = px.histogram(location_data,
+                            x='daily_co2_emmission_ppm',
+                            nbins=20,
+                            title='CO2 Emission Distribution')
+    hist_html = hist_fig.to_html(full_html=False)
+
     # Descriptive statistics
     stats_html = location_data.describe().to_html()
 
@@ -109,6 +116,9 @@ def get_data():
                                    yaxis_title='CO2 Emission (ppm)')
         forecast_html = forecast_fig.to_html(full_html=False)
 
+    # AI Insights
+    ai_insights = generate_ai_insights(location_data)
+
     # Image handling
     image_path = f'static/images/{selected_location}.png'  # assuming the file name is the exact location name
     try:
@@ -119,9 +129,11 @@ def get_data():
     return jsonify({
         'latest_reading': latest_reading,
         'graph_html': graph_html,
+        'hist_html': hist_html,
         'stats_html': stats_html,
         'forecast_html': forecast_html,
         'image_base64': image_base64,
+        'ai_insights': ai_insights,
         'location': selected_location
     })
 
@@ -157,6 +169,33 @@ def download_forecast():
                          mimetype='text/csv')
 
     return "Not enough data for forecasting", 400
+
+
+def generate_ai_insights(df):
+    insights = {}
+    if not df.empty:
+        max_value = df['daily_co2_emmission_ppm'].max()
+        min_value = df['daily_co2_emmission_ppm'].min()
+        mean_value = df['daily_co2_emmission_ppm'].mean()
+
+        # Example insights
+        insights[
+            'max_value'] = f"Maximum CO2 emission recorded: {max_value:.2f} ppm"
+        insights[
+            'min_value'] = f"Minimum CO2 emission recorded: {min_value:.2f} ppm"
+        insights['mean_value'] = f"Average CO2 emission: {mean_value:.2f} ppm"
+
+        # Trend analysis
+        trend = np.polyfit(range(len(df['daily_co2_emmission_ppm'])),
+                           df['daily_co2_emmission_ppm'], 1)
+        if trend[0] > 0:
+            insights[
+                'trend'] = "There is an increasing trend in CO2 emissions over time."
+        else:
+            insights[
+                'trend'] = "There is a decreasing trend in CO2 emissions over time."
+
+    return insights
 
 
 if __name__ == '__main__':
