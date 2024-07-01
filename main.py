@@ -171,6 +171,7 @@ def download_forecast():
     return "Not enough data for forecasting", 400
 
 
+
 def generate_ai_insights(df):
     insights = {}
     if not df.empty:
