@@ -93,12 +93,3 @@ We welcome contributions from the community! To contribute:
 5. **Create a Pull Request**
    Open a pull request on the GitHub repository, and provide a detailed description of your changes.
 
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-
-## Contact
-
-For questions, suggestions, or issues, please open an issue on GitHub or contact the project maintainer at [your-email@example.com].
-
-Thank you for contributing to CO2-APP and helping to make our world a greener place!
